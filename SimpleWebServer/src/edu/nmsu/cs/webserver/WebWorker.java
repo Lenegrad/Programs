@@ -90,6 +90,7 @@ public class WebWorker implements Runnable
 				System.err.println("Request line: (" + line + ")");
 				if(line.contains("GET") && !line.contains("favicon")) {
 					fileName = line.substring(line.indexOf('/') + 1, line.indexOf(' ', line.indexOf('/')));
+					fileName = "src/edu/nmsu/cs/webserver/" + fileName;
 					System.err.println("This is the file name: " + fileName);
 					pathfile = new File(fileName);
 				}
