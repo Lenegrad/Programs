@@ -30,6 +30,7 @@ import java.text.DateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 import java.io.File;
+import java.io.FileReader;
 
 public class WebWorker implements Runnable
 {
@@ -60,7 +61,7 @@ public class WebWorker implements Runnable
 			OutputStream os = socket.getOutputStream();
 			readHTTPRequest(is);
 			writeHTTPHeader(os, "text/html", pathfile);
-			writeContent(os);
+			writeContent(os, pathfile);
 			os.flush();
 			socket.close();
 		}
@@ -88,7 +89,7 @@ public class WebWorker implements Runnable
 				line = r.readLine();
 				System.err.println("Request line: (" + line + ")");
 				if(line.contains("GET") && !line.contains("favicon")) {
-					fileName = line.substring(line.indexOf('/'), line.indexOf(' ', line.indexOf('/')));
+					fileName = line.substring(line.indexOf('/') + 1, line.indexOf(' ', line.indexOf('/')));
 					System.err.println("This is the file name: " + fileName);
 					pathfile = new File(fileName);
 				}
@@ -114,25 +115,41 @@ public class WebWorker implements Runnable
 	 **/
 	private void writeHTTPHeader(OutputStream os, String contentType, File fname) throws Exception
 	{
-		if(fname.exists()) {
-			Date d = new Date();
-			DateFormat df = DateFormat.getDateTimeInstance();
-			df.setTimeZone(TimeZone.getTimeZone("GMT"));
-			os.write("HTTP/1.1 200 OK\n".getBytes());
-			os.write("Date: ".getBytes());
-			os.write((df.format(d)).getBytes());
-			os.write("\n".getBytes());
-			os.write("Server: Ruben's very own server\n".getBytes());
-			os.write("Connection: close\n".getBytes());
-			os.write("Content-Type: ".getBytes());
-			os.write(contentType.getBytes());
-			os.write("\n\n".getBytes()); // HTTP header ends with 2 newlines
+		if(fname != null) {
+			if(fname.exists()) {
+				Date d = new Date();
+				DateFormat df = DateFormat.getDateTimeInstance();
+				df.setTimeZone(TimeZone.getTimeZone("GMT"));
+				os.write("HTTP/1.1 200 OK\n".getBytes());
+				os.write("Date: ".getBytes());
+				os.write((df.format(d)).getBytes());
+				os.write("\n".getBytes());
+				os.write("Server: Ruben's very own server\n".getBytes());
+				os.write("Connection: close\n".getBytes());
+				os.write("Content-Type: ".getBytes());
+				os.write(contentType.getBytes());
+				os.write("\n\n".getBytes()); // HTTP header ends with 2 newlines
+			}
+			else {
+				Date d = new Date();
+				DateFormat df = DateFormat.getDateTimeInstance();
+				df.setTimeZone(TimeZone.getTimeZone("GMT"));
+				os.write("HTTP/1.1 404 NOT FOUND\n".getBytes());
+				os.write("Date: ".getBytes());
+				os.write((df.format(d)).getBytes());
+				os.write("\n".getBytes());
+				os.write("Server: Ruben's very own server\n".getBytes());
+				os.write("Connection: close\n".getBytes());
+				os.write("Content-Type: ".getBytes());
+				os.write(contentType.getBytes());
+				os.write("\n\n".getBytes()); // HTTP header ends with 2 newlines
+			}
 		}
 		else {
 			Date d = new Date();
 			DateFormat df = DateFormat.getDateTimeInstance();
 			df.setTimeZone(TimeZone.getTimeZone("GMT"));
-			os.write("HTTP/1.1 404 OK\n".getBytes());
+			os.write("HTTP/1.1 200 OK\n".getBytes());
 			os.write("Date: ".getBytes());
 			os.write((df.format(d)).getBytes());
 			os.write("\n".getBytes());
@@ -152,11 +169,17 @@ public class WebWorker implements Runnable
 	 * @param os
 	 *          is the OutputStream object to write to
 	 **/
-	private void writeContent(OutputStream os) throws Exception
+	private void writeContent(OutputStream os, File fname) throws Exception
 	{
-		os.write("<html><head></head><body>\n".getBytes());
-		os.write("<h3>My web server works!</h3>\n".getBytes());
-		os.write("</body></html>\n".getBytes());
+		if(fname != null && fname.exists()) {
+			BufferedReader reader = new BufferedReader (new FileReader(fname));
+			String contentLine = reader.readLine();
+			while(contentLine != null) {
+				os.write(contentLine.getBytes());
+				contentLine = reader.readLine();
+			}
+			reader.close();
+		}
 	}
 
 } // end class
