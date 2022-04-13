@@ -1,5 +1,6 @@
 package edu.nmsu.cs.webserver;
 
+
 /**
  * Web worker: an object of this class executes in its own new thread to receive and respond to a
  * single HTTP request. After the constructor the object executes on its "run" method, and leaves
@@ -21,16 +22,15 @@ package edu.nmsu.cs.webserver;
  *
  **/
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+
 import java.net.Socket;
 import java.text.DateFormat;
 import java.util.Date;
 import java.util.TimeZone;
-import java.io.File;
-import java.io.FileReader;
+
+import java.io.*;
+import java.awt.image.*;
+import javax.imageio.*;
 
 public class WebWorker implements Runnable
 {
@@ -38,6 +38,7 @@ public class WebWorker implements Runnable
 	private Socket socket;
 	private String fileName;
 	private File pathfile;
+	private String typeExtension;
 
 	/**
 	 * Constructor: must have a valid open socket
@@ -60,7 +61,22 @@ public class WebWorker implements Runnable
 			InputStream is = socket.getInputStream();
 			OutputStream os = socket.getOutputStream();
 			readHTTPRequest(is);
-			writeHTTPHeader(os, "text/html", pathfile);
+			if(typeExtension != null) {
+				if (typeExtension.equals("html"))
+					writeHTTPHeader(os, "text/html", pathfile);
+				
+				else if(typeExtension.equals("gif"))
+					writeHTTPHeader(os, "image/gif", pathfile);
+				
+				else if (typeExtension.equals("jpeg"))
+					writeHTTPHeader(os, "image/jpg", pathfile);
+				
+				else if(typeExtension.equals("png"))
+					writeHTTPHeader(os, "image/png", pathfile);
+			}
+			else
+				writeHTTPHeader(os, "text/html", pathfile);
+			
 			writeContent(os, pathfile);
 			os.flush();
 			socket.close();
@@ -90,7 +106,9 @@ public class WebWorker implements Runnable
 				System.err.println("Request line: (" + line + ")");
 				if(line.contains("GET") && !line.contains("favicon")) {
 					fileName = line.substring(line.indexOf('/') + 1, line.indexOf(' ', line.indexOf('/')));
-					fileName = "src/edu/nmsu/cs/webserver/" + fileName;
+					fileName = "www/" + fileName;
+					typeExtension = fileName.substring(fileName.indexOf('.') + 1);
+					System.err.println("The type is: " + typeExtension);
 					System.err.println("This is the file name: " + fileName);
 					pathfile = new File(fileName);
 				}
@@ -173,14 +191,54 @@ public class WebWorker implements Runnable
 	private void writeContent(OutputStream os, File fname) throws Exception
 	{
 		if(fname != null && fname.exists()) {
-			BufferedReader reader = new BufferedReader (new FileReader(fname));
-			String contentLine = reader.readLine();
-			while(contentLine != null) {
-				os.write(contentLine.getBytes());
-				contentLine = reader.readLine();
+			if(typeExtension.equals("html")) {
+				BufferedReader reader = new BufferedReader (new FileReader(fname));
+				String contentLine = reader.readLine();
+				while(contentLine != null) {
+					os.write(contentLine.getBytes());
+					contentLine = reader.readLine();
+				}
+				reader.close();
 			}
-			reader.close();
+			
+			if(typeExtension.equals("png")) {
+				BufferedImage img = null;
+				ByteArrayOutputStream output = new ByteArrayOutputStream();
+				try {
+					img = ImageIO.read(fname);
+				}
+				catch(IOException e){}
+				
+				ImageIO.write(img, "png", output);
+				byte [] data = output.toByteArray();
+				os.write(data);
+			}
+			
+			if(typeExtension.equals("jpeg")) {
+				BufferedImage img = null;
+				ByteArrayOutputStream output = new ByteArrayOutputStream();
+				try {
+					img = ImageIO.read(fname);
+				}
+				catch(IOException e){}
+				
+				ImageIO.write(img, "jpg", output);
+				byte [] data = output.toByteArray();
+				os.write(data);
+			}
+			
+			if(typeExtension.equals("gif")) {
+				BufferedImage img = null;
+				ByteArrayOutputStream output = new ByteArrayOutputStream();
+				try {
+					img = ImageIO.read(fname);
+				}
+				catch(IOException e){}
+				
+				ImageIO.write(img, "gif", output);
+				byte [] data = output.toByteArray();
+				os.write(data);
+			}
 		}
 	}
-
 } // end class
