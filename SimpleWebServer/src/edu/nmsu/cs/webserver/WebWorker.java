@@ -61,6 +61,7 @@ public class WebWorker implements Runnable
 			InputStream is = socket.getInputStream();
 			OutputStream os = socket.getOutputStream();
 			readHTTPRequest(is);
+			
 			if(typeExtension != null) {
 				if (typeExtension.equals("html"))
 					writeHTTPHeader(os, "text/html", pathfile);
